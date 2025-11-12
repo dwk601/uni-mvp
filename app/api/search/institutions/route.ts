@@ -75,25 +75,42 @@ export async function GET(request: NextRequest) {
       params.level_of_institution = `in.(${filterQuery.institutionTypes.join(",")})`;
     }
 
-    // Fetch institutions using the API client
-    const result = await apiClient.getPaginated<Institution>(
-      "institution",
+    // Apply cost filters if provided
+    if (filterQuery.costMin !== undefined) {
+      params.tuition_and_fees = `gte.${filterQuery.costMin}`;
+    }
+    if (filterQuery.costMax !== undefined) {
+      params.tuition_and_fees = params.tuition_and_fees
+        ? `${params.tuition_and_fees},lte.${filterQuery.costMax}`
+        : `lte.${filterQuery.costMax}`;
+    }
+
+    // Fetch institutions using the complete view which includes costs, enrollment, etc.
+    const result = await apiClient.getPaginated<any>(
+      "v_institutions_complete",
       params,
       page,
       limit
     );
 
-    // For filters that require joined data (costs, languages, majors),
-    // we would need to fetch related data and extend the institutions
-    // For now, return basic filtered data
-    const extendedInstitutions: InstitutionWithFilters[] = result.data.map((inst: Institution) => ({
-      ...inst,
-      // These would be populated from joined queries in production
-      tuition_and_fees: null,
-      language_of_instruction: "English",
+    // Map the view data to our InstitutionWithFilters format
+    const extendedInstitutions: InstitutionWithFilters[] = result.data.map((inst: any) => ({
+      unitid: inst.unitid,
+      institution_name: inst.institution_name,
+      city: inst.city,
+      state_code: inst.state_code,
+      level_of_institution: inst.level_of_institution,
+      control_of_institution: inst.control_of_institution,
+      degree_of_urbanization: inst.degree_of_urbanization,
+      rank: inst.rank,
+      created_at: inst.created_at,
+      updated_at: inst.updated_at,
+      // Extended fields from the view
+      tuition_and_fees: inst.tuition_and_fees,
+      language_of_instruction: "English", // Default for now
       world_ranking: inst.rank || null,
-      country: "USA",
-      majors: [],
+      country: inst.state_name || "USA",
+      majors: [], // Would need separate query for majors
     }));
 
     // Apply client-side filters for complex criteria
