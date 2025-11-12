@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { apiClient } from "@/lib/api/client";
+import { buildWeightedTsQuery } from "@/lib/search/synonyms";
 import type { Institution } from "@/types/database";
 import type { FilterQuery } from "@/types/filters";
 import {
@@ -50,9 +51,12 @@ export async function GET(request: NextRequest) {
     // Build PostgREST query parameters
     const params: Record<string, any> = {};
 
-    // Apply text search if query provided
-    if (query) {
-      params.institution_name = `ilike.*${query}*`;
+    // Apply full-text search if query provided (with synonym expansion)
+    if (query && query.trim()) {
+      // Build PostgreSQL tsquery with synonyms
+      const tsquery = buildWeightedTsQuery(query);
+      // Use full-text search on search_vector
+      params.search_vector = `fts.${tsquery}`;
     }
 
     // Apply state/country filter
@@ -85,9 +89,11 @@ export async function GET(request: NextRequest) {
         : `lte.${filterQuery.costMax}`;
     }
 
-    // Fetch institutions using the complete view which includes costs, enrollment, etc.
+    // Fetch institutions using the search view which includes search_vector for FTS
+    // Falls back to v_institutions_complete if no query is provided
+    const viewName = query && query.trim() ? "v_institutions_search" : "v_institutions_complete";
     const result = await apiClient.getPaginated<any>(
-      "v_institutions_complete",
+      viewName,
       params,
       page,
       limit
