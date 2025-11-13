@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ModerationActionDialog } from "@/components/moderation/moderation-action-dialog";
+import { ContributionDetailDialog } from "@/components/moderation/contribution-detail-dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
@@ -44,6 +45,9 @@ export default function ModerationPage() {
   const selectAll = useModerationStore((state) => state.selectAll);
   const deselectAll = useModerationStore((state) => state.deselectAll);
   const fetchContributions = useModerationStore((state) => state.fetchContributions);
+
+  const [selectedContribution, setSelectedContribution] = useState<any>(null);
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
 
   // Compute derived values in the component
   const pendingContributions = contributions.filter((c) => c.status === "PENDING");
@@ -237,11 +241,12 @@ export default function ModerationPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => toggleSelection(contribution.id)}
+                          onClick={() => {
+                            setSelectedContribution(contribution);
+                            setDetailDialogOpen(true);
+                          }}
                         >
-                          {selectedContributions.has(contribution.id)
-                            ? "Deselect"
-                            : "Select"}
+                          View Details
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -273,6 +278,13 @@ export default function ModerationPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Contribution Detail Dialog */}
+      <ContributionDetailDialog
+        contribution={selectedContribution}
+        open={detailDialogOpen}
+        onOpenChange={setDetailDialogOpen}
+      />
     </div>
   );
 }

@@ -18,6 +18,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronUp, MapPin, TrendingUp, Users, DollarSign } from "lucide-react";
+import { AddToComparisonButton } from "./add-to-comparison-button";
 import type { Institution } from "@/types/database";
 
 export interface InstitutionListProps {
@@ -119,6 +120,10 @@ function InstitutionCard({ institution, isExpanded, onToggle }: InstitutionCardP
                 #{institution.rank}
               </Badge>
             )}
+            <AddToComparisonButton
+              institution={institution}
+              variant="button"
+            />
             <Button
               variant="ghost"
               size="sm"

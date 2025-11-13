@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/providers/theme-provider";
+import { ComparisonBar } from "@/components/institutions/comparison-bar";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -33,6 +34,7 @@ export default function RootLayout({
           storageKey="university-platform-theme"
         >
           {children}
+          <ComparisonBar />
         </ThemeProvider>
       </body>
     </html>

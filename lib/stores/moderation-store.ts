@@ -154,18 +154,22 @@ export const useModerationStore = create<ModerationState>()(
           set({ isSubmitting: true, error: null });
           
           try {
-            // TODO: Replace with actual API call
-            // await fetch('/api/admin/moderation/approve', {
-            //   method: 'POST',
-            //   body: JSON.stringify({ ids, reason, moderatorId }),
-            // });
+            const response = await fetch('/api/admin/moderation/approve', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ ids, reason, moderatorId, moderatorName }),
+            });
             
-            // Simulate API call
-            await new Promise((resolve) => setTimeout(resolve, 1000));
+            if (!response.ok) {
+              const errorData = await response.json();
+              throw new Error(errorData.error || 'Failed to approve contributions');
+            }
             
             const now = new Date();
             
-            // Update contributions
+            // Update contributions locally
             set((state) => ({
               contributions: state.contributions.map((c) =>
                 ids.includes(c.id)
@@ -200,6 +204,7 @@ export const useModerationStore = create<ModerationState>()(
               isSubmitting: false,
               error: error instanceof Error ? error.message : "Failed to approve contributions",
             });
+            throw error; // Re-throw to let dialog handle it
           }
         },
 
@@ -207,18 +212,22 @@ export const useModerationStore = create<ModerationState>()(
           set({ isSubmitting: true, error: null });
           
           try {
-            // TODO: Replace with actual API call
-            // await fetch('/api/admin/moderation/reject', {
-            //   method: 'POST',
-            //   body: JSON.stringify({ ids, reason, moderatorId }),
-            // });
+            const response = await fetch('/api/admin/moderation/reject', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ ids, reason, moderatorId, moderatorName }),
+            });
             
-            // Simulate API call
-            await new Promise((resolve) => setTimeout(resolve, 1000));
+            if (!response.ok) {
+              const errorData = await response.json();
+              throw new Error(errorData.error || 'Failed to reject contributions');
+            }
             
             const now = new Date();
             
-            // Update contributions
+            // Update contributions locally
             set((state) => ({
               contributions: state.contributions.map((c) =>
                 ids.includes(c.id)
@@ -253,6 +262,7 @@ export const useModerationStore = create<ModerationState>()(
               isSubmitting: false,
               error: error instanceof Error ? error.message : "Failed to reject contributions",
             });
+            throw error; // Re-throw to let dialog handle it
           }
         },
 
@@ -280,65 +290,22 @@ export const useModerationStore = create<ModerationState>()(
           set({ isLoading: true, error: null });
           
           try {
-            // TODO: Replace with actual API call
-            // const response = await fetch('/api/admin/moderation/contributions');
-            // const data = await response.json();
+            const response = await fetch('/api/admin/moderation/contributions');
             
-            // Simulate API call with mock data
-            await new Promise((resolve) => setTimeout(resolve, 500));
+            if (!response.ok) {
+              throw new Error(`Failed to fetch contributions: ${response.statusText}`);
+            }
             
-            const mockContributions: UserContribution[] = [
-              {
-                id: "contrib-1",
-                userId: "user-1",
-                userName: "John Doe",
-                userEmail: "john@example.com",
-                type: "EDIT_INSTITUTION",
-                status: "PENDING",
-                submittedAt: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-                data: {
-                  institutionId: 1,
-                  institutionName: "MIT",
-                  field: "acceptance_rate",
-                  oldValue: "3.5%",
-                  newValue: "3.2%",
-                  description: "Updated acceptance rate for 2024",
-                },
-              },
-              {
-                id: "contrib-2",
-                userId: "user-2",
-                userName: "Jane Smith",
-                userEmail: "jane@example.com",
-                type: "CORRECTION",
-                status: "PENDING",
-                submittedAt: new Date(Date.now() - 5 * 60 * 60 * 1000), // 5 hours ago
-                data: {
-                  institutionId: 5,
-                  institutionName: "Stanford University",
-                  field: "tuition",
-                  oldValue: "$61,000",
-                  newValue: "$61,731",
-                  description: "Corrected tuition amount",
-                },
-              },
-              {
-                id: "contrib-3",
-                userId: "user-3",
-                userName: "Bob Johnson",
-                userEmail: "bob@example.com",
-                type: "NEW_MAJOR",
-                status: "PENDING",
-                submittedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // 1 day ago
-                data: {
-                  institutionId: 10,
-                  institutionName: "Harvard University",
-                  description: "Add new AI and Machine Learning major",
-                },
-              },
-            ];
+            const data = await response.json();
             
-            set({ contributions: mockContributions, isLoading: false });
+            // Transform dates from strings to Date objects
+            const contributions: UserContribution[] = data.map((contrib: any) => ({
+              ...contrib,
+              submittedAt: new Date(contrib.submittedAt),
+              reviewedAt: contrib.reviewedAt ? new Date(contrib.reviewedAt) : undefined,
+            }));
+            
+            set({ contributions, isLoading: false });
           } catch (error) {
             set({
               isLoading: false,
