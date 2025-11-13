@@ -14,12 +14,27 @@ import {
   InstitutionWithFilters,
 } from "@/lib/search/filters";
 import { createDefaultFilterState } from "@/types/filters";
+import {
+  initializeCache,
+  CACHE_KEYS,
+  CACHE_TTL,
+} from "@/lib/performance/cache-utils";
+import { cacheKey } from "@/lib/performance/caching";
+import { compressResponse } from "@/lib/performance/compression";
+import { recordMetric } from "@/lib/performance/monitoring";
+
+// Enable compression for API responses (set to false to disable)
+const COMPRESSION_ENABLED = process.env.COMPRESSION_ENABLED !== 'false';
 
 /**
  * GET /api/search/institutions
  * Search and filter institutions
  */
 export async function GET(request: NextRequest) {
+  const startTime = performance.now();
+  let isCached = false;
+  let isCompressed = false;
+
   try {
     const searchParams = request.nextUrl.searchParams;
 
@@ -47,6 +62,62 @@ export async function GET(request: NextRequest) {
 
     // Extract search query
     const query = searchParams.get("q") || "";
+
+    // Generate cache key based on all query parameters
+    const cache = await initializeCache();
+    const searchCacheKey = cacheKey(
+      CACHE_KEYS.SEARCH_RESULTS,
+      query,
+      JSON.stringify(filterQuery),
+      page,
+      limit
+    );
+
+    // Try to get from cache
+    const cached = await cache.get(searchCacheKey);
+    if (cached) {
+      isCached = true;
+      const cachedResponse = {
+        ...cached,
+        cached: true,
+      };
+      
+      // Compress cached responses if enabled
+      if (COMPRESSION_ENABLED) {
+        isCompressed = true;
+        const response = await compressResponse(request, cachedResponse);
+        
+        // Record metric
+        const duration = performance.now() - startTime;
+        recordMetric({
+          timestamp: Date.now(),
+          endpoint: '/api/search/institutions',
+          method: 'GET',
+          duration,
+          statusCode: 200,
+          cached: true,
+          compressed: true,
+          cacheHit: true,
+        });
+        
+        return response;
+      }
+      
+      // Record metric for uncompressed cached response
+      const duration = performance.now() - startTime;
+      recordMetric({
+        timestamp: Date.now(),
+        endpoint: '/api/search/institutions',
+        method: 'GET',
+        duration,
+        statusCode: 200,
+        cached: true,
+        compressed: false,
+        cacheHit: true,
+      });
+      
+      return NextResponse.json(cachedResponse);
+    }
 
     // Build PostgREST query parameters
     const params: Record<string, any> = {};
@@ -132,7 +203,7 @@ export async function GET(request: NextRequest) {
 
     const filteredResult = applyFilters(extendedInstitutions, filterState);
 
-    return NextResponse.json({
+    const responseData = {
       institutions: filteredResult.items,
       total: result.count,
       page: result.page,
@@ -140,8 +211,64 @@ export async function GET(request: NextRequest) {
       totalPages: result.totalPages,
       appliedFilters: filteredResult.appliedFilters,
       matchPercentage: filteredResult.matchPercentage,
+    };
+
+    // Cache the result
+    await cache.set(searchCacheKey, responseData, CACHE_TTL.SEARCH_RESULTS);
+
+    const freshResponse = {
+      ...responseData,
+      cached: false,
+    };
+
+    // Compress fresh responses if enabled
+    if (COMPRESSION_ENABLED) {
+      isCompressed = true;
+      const response = await compressResponse(request, freshResponse);
+      
+      // Record metric
+      const duration = performance.now() - startTime;
+      recordMetric({
+        timestamp: Date.now(),
+        endpoint: '/api/search/institutions',
+        method: 'GET',
+        duration,
+        statusCode: 200,
+        cached: false,
+        compressed: true,
+        cacheHit: false,
+      });
+      
+      return response;
+    }
+
+    // Record metric for uncompressed fresh response
+    const duration = performance.now() - startTime;
+    recordMetric({
+      timestamp: Date.now(),
+      endpoint: '/api/search/institutions',
+      method: 'GET',
+      duration,
+      statusCode: 200,
+      cached: false,
+      compressed: false,
+      cacheHit: false,
     });
+
+    return NextResponse.json(freshResponse);
   } catch (error) {
+    // Record error metric
+    const duration = performance.now() - startTime;
+    recordMetric({
+      timestamp: Date.now(),
+      endpoint: '/api/search/institutions',
+      method: 'GET',
+      duration,
+      statusCode: 500,
+      cached: isCached,
+      compressed: isCompressed,
+      errorMessage: error instanceof Error ? error.message : 'Unknown error',
+    });
     console.error("Search API error:", error);
     // Return more detailed error information for debugging
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
