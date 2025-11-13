@@ -5,7 +5,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -46,6 +46,7 @@ interface SearchFilterPanelProps {
 }
 
 export function SearchFilterPanel({ onApplyFilters }: SearchFilterPanelProps) {
+  const [mounted, setMounted] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     location: true,
     majors: false,
@@ -53,6 +54,10 @@ export function SearchFilterPanel({ onApplyFilters }: SearchFilterPanelProps) {
     type: false,
     ranking: false,
   });
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const {
     countries,
@@ -161,11 +166,13 @@ export function SearchFilterPanel({ onApplyFilters }: SearchFilterPanelProps) {
           <div className="flex items-center gap-2">
             <Filter className="h-5 w-5" />
             <CardTitle>Filters</CardTitle>
-            {activeFilterCount() > 0 && (
-              <Badge variant="secondary">{activeFilterCount()}</Badge>
+            {mounted && activeFilterCount() > 0 && (
+              <Badge variant="secondary">
+                {activeFilterCount()}
+              </Badge>
             )}
           </div>
-          {hasActiveFilters() && (
+          {mounted && hasActiveFilters() && (
             <Button variant="ghost" size="sm" onClick={handleClearAll}>
               Clear All
             </Button>
