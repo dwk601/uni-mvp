@@ -1,0 +1,69 @@
+{
+  "summary": {
+    "totalPages": 6,
+    "totalViolations": 0,
+    "timestamp": "2025-11-13T14:22:02.033Z"
+  },
+  "results": [
+    {
+      "component": "Home Page",
+      "url": "http://localhost:3001",
+      "description": "Main landing page with search interface",
+      "timestamp": "2025-11-13T14:21:54.806Z",
+      "violations": [],
+      "passes": 22,
+      "incomplete": 0,
+      "inapplicable": 39
+    },
+    {
+      "component": "Search Results",
+      "url": "http://localhost:3001?query=engineering&location=California",
+      "description": "Institution search results list",
+      "timestamp": "2025-11-13T14:21:55.795Z",
+      "violations": [],
+      "passes": 22,
+      "incomplete": 0,
+      "inapplicable": 39
+    },
+    {
+      "component": "Institution Details",
+      "url": "http://localhost:3001/institution/1",
+      "description": "Individual institution detail page",
+      "timestamp": "2025-11-13T14:21:58.130Z",
+      "violations": [],
+      "passes": 16,
+      "incomplete": 0,
+      "inapplicable": 45
+    },
+    {
+      "component": "Comparison Mode",
+      "url": "http://localhost:3001/compare",
+      "description": "Side-by-side institution comparison",
+      "timestamp": "2025-11-13T14:22:00.338Z",
+      "violations": [],
+      "passes": 21,
+      "incomplete": 0,
+      "inapplicable": 40
+    },
+    {
+      "component": "Login Page",
+      "url": "http://localhost:3001/auth/login",
+      "description": "User authentication form",
+      "timestamp": "2025-11-13T14:22:01.203Z",
+      "violations": [],
+      "passes": 16,
+      "incomplete": 0,
+      "inapplicable": 45
+    },
+    {
+      "component": "Signup Page",
+      "url": "http://localhost:3001/auth/signup",
+      "description": "User registration form",
+      "timestamp": "2025-11-13T14:22:02.000Z",
+      "violations": [],
+      "passes": 16,
+      "incomplete": 0,
+      "inapplicable": 45
+    }
+  ]
+}

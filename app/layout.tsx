@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { ComparisonBar } from "@/components/institutions/comparison-bar";
+import { SkipLink } from "@/components/accessibility/SkipLink";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -29,11 +30,14 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <SkipLink />
         <ThemeProvider
           defaultTheme="system"
           storageKey="university-platform-theme"
         >
-          {children}
+          <main id="main-content">
+            {children}
+          </main>
           <ComparisonBar />
         </ThemeProvider>
       </body>
